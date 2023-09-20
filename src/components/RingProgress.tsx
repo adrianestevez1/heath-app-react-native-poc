@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Circle, Svg } from 'react-native-svg';
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 
 interface RingProgressProps {
     radius?: number;
@@ -10,7 +11,9 @@ interface RingProgressProps {
 
 const color = '#EE0F55';
 
-const RingProgress = ({radius = 100, stroke=20, progress}: RingProgressProps) => {
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+const RingProgress = ({radius = 100, stroke=35, progress}: RingProgressProps) => {
     const styles = StyleSheet.create({
         valueContainer: {
             width: radius * 2,
@@ -19,12 +22,22 @@ const RingProgress = ({radius = 100, stroke=20, progress}: RingProgressProps) =>
         },
       });
 
-      const innerRadius = radius - stroke / 2;
-      const circumference = 2 * Math.PI * innerRadius;
+    const innerRadius = radius - stroke / 2;
+    const circumference = 2 * Math.PI * innerRadius;
+
+    const fill = useSharedValue(0.4);
+
+    const animatedProps = useAnimatedProps(() => ({
+        strokeDasharray: [circumference * fill.value, circumference],
+    }));
+
+    useEffect(() => {
+        fill.value = withTiming(progress, {duration: 1500});
+    }, [progress]);
 
     return (
         <View style={styles.valueContainer}>
-            <Svg>
+            <Svg style={{position: 'absolute', zIndex: 6}}>
                 <Circle
                     cx={radius}
                     cy={radius}
@@ -33,18 +46,22 @@ const RingProgress = ({radius = 100, stroke=20, progress}: RingProgressProps) =>
                     strokeWidth={stroke}
                     opacity={0.2}
                 />
-                <Circle
+            </Svg>
+            <Svg>
+                <AnimatedCircle
                     cx={radius}
                     cy={radius}
                     r={innerRadius}
                     stroke={color}
                     strokeWidth={stroke}
-                    strokeDasharray={[circumference * progress, circumference]}
+                    animatedProps={animatedProps}
                     strokeLinecap='round'
                     rotation='-90'
-                    origin={`${radius}, ${radius}`}
+                    originX={radius}
+                    originY={radius}
                 />
             </Svg>
+            
         </View>
     );
 };
